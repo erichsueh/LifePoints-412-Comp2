@@ -40,10 +40,52 @@ class Follower:
         #mask = mask[search_top:]
         mask1 = mask[:, :w/4]
         mask2 = mask[:,w/4 *3:]
+        mask3 = mask[:,w/4:3*w/4]
         #mask = numpy.asarray(mask)
+        M3 = cv2.moments(mask3)
         M2 = cv2.moments(mask2)
         M1 = cv2.moments(mask1)
-        if (M1['m00'] > 0) and (M2['m00'] >0):
+
+        if (M1['m00'] > 0 and M2['m00'] > 0 and M3['m00'] > 0):
+            #Left, Middle, Right
+            cx1 = int(M1['m10']/M1['m00'])
+            cy1 = int(M1['m01']/M1['m00'])
+            cx2 = int(M2['m10']/M2['m00']) + ((w/4) *3)
+            cy2 = int(M2['m01']/M2['m00'])
+            cx3 = int(M3['m10']/M3['m00']) + (w/4)
+            cy3 = int(M3['m01']/M3['m00'])
+            cv2.circle(img, (cx1, cy1), 20, (0,0,255), -1)
+            cv2.circle(img, (cx2, cy2), 20, (0,255,255), -1)
+            cv2.circle(img, (cx3, cy3), 20, (255,0,0), -1)
+
+        elif (M1['m00'] > 0 and M2['m00'] == 0 and M3['m00'] > 0):
+            #Left, Middle
+            cx1 = int(M1['m10']/M1['m00'])
+            cy1 = int(M1['m01']/M1['m00'])
+            cx3 = int(M3['m10']/M3['m00']) + (w/4)
+            cy3 = int(M3['m01']/M3['m00'])
+            cv2.circle(img, (cx1, cy1), 20, (0,0,255), -1)
+            cv2.circle(img, (cx3, cy3), 20, (255,0,0), -1)
+
+
+        elif (M1['m00'] == 0 and M2['m00'] > 0 and M3['m00'] > 0):
+            #Middle, Right
+            cx2 = int(M2['m10']/M2['m00']) + ((w/4) *3)
+            cy2 = int(M2['m01']/M2['m00'])
+            cx3 = int(M3['m10']/M3['m00']) + (w/4)
+            cy3 = int(M3['m01']/M3['m00'])
+            cv2.circle(img, (cx2, cy2), 20, (0,255,255), -1)
+            cv2.circle(img, (cx3, cy3), 20, (255,0,0), -1)
+
+        elif (M1['m00'] == 0 and M2['m00'] == 0 and M3['m00'] > 0):
+            #Middle
+            cx3 = int(M3['m10']/M3['m00']) + (w/4)
+            cy3 = int(M3['m01']/M3['m00'])
+            cv2.circle(img, (cx3, cy3), 20, (255,0,0), -1)
+
+
+        elif (M1['m00'] > 0 and M2['m00'] >0 and M3['m00'] == 0):
+            #Left, Right
             cx1 = int(M1['m10']/M1['m00'])
             cx2 = int(M2['m10']/M2['m00']) + ((w/4) *3)
             cy1 = int(M1['m01']/M1['m00'])
@@ -56,7 +98,9 @@ class Follower:
                 self.twist.linear.x = .5
                 self.twist.angular.z = -float(err) / 300
                 self.cmd_vel_pub.publish(self.twist)
-        elif(M1['m00']>0):
+
+        elif(M1['m00']>0 and M2['m00'] == 0 and M3['m00'] == 0):
+            #Left
             #detecting left side turn left ish
             cx1 = int(M1['m10']/M1['m00'])
             cy1 = int(M1['m01']/M1['m00'])
@@ -66,7 +110,8 @@ class Follower:
                 self.twist.linear.x = .5
                 self.twist.angular.z = float(err) / 300
                 self.cmd_vel_pub.publish(self.twist)
-        elif(M2['m00']>0):
+        elif(M1['m00'] == 0 and M2['m00']>0 and M3['m00'] == 0):
+            #Right
             cx2 = int(M2['m10']/M2['m00'])
             cy2 = int(M2['m01']/M2['m00'])
             cv2.circle(img, (cx2, cy2), 20, (0,0,255), -1)
@@ -76,7 +121,10 @@ class Follower:
                 self.twist.angular.z = float(err) / 300
                 self.cmd_vel_pub.publish(self.twist)#detecting right side
             print("right")
+
+        
         else:
+            #None
             print("nothing")
             #no detection:
         cv2.imshow("winleft", mask1)
