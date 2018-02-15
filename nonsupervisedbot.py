@@ -47,7 +47,7 @@ class Follower:
         M1 = cv2.moments(mask1)
 
         if (M1['m00'] > 0 and M2['m00'] > 0 and M3['m00'] > 0):
-            #Left, Middle, Right
+            #Left 1, Middle 3, Right 2
             cx1 = int(M1['m10']/M1['m00'])
             cy1 = int(M1['m01']/M1['m00'])
             cx2 = int(M2['m10']/M2['m00']) + ((w/4) *3)
@@ -57,6 +57,29 @@ class Follower:
             cv2.circle(img, (cx1, cy1), 20, (0,0,255), -1)
             cv2.circle(img, (cx2, cy2), 20, (0,255,255), -1)
             cv2.circle(img, (cx3, cy3), 20, (255,0,0), -1)
+            #err = cx2 - w/2
+            diffLeft = cx3 - cx1
+            diffRight= cx3 - cx2
+            if diffLeft < -diffRight:
+                #left is closer?
+                if started == True:
+                    #self.twist.linear.x = .5
+                    self.twist.angular.z = -1
+                    self.cmd_vel_pub.publish(self.twist)
+            elif -diffRight < diffLeft:
+                #right is closer?
+                if started == True:
+                    #self.twist.linear.x = .5
+                    self.twist.angular.z = 1
+                    self.cmd_vel_pub.publish(self.twist)
+            else:
+                #should never hit this case but this means that its in the middle
+                #go straight i suppose?
+                if started == True:
+                    self.twist.linear.x = .5
+                    #self.twist.angular.z = float(err) / 300
+                    self.cmd_vel_pub.publish(self.twist)#detecting right side
+            print("right")
 
         elif (M1['m00'] > 0 and M2['m00'] == 0 and M3['m00'] > 0):
             #Left, Middle
@@ -66,6 +89,10 @@ class Follower:
             cy3 = int(M3['m01']/M3['m00'])
             cv2.circle(img, (cx1, cy1), 20, (0,0,255), -1)
             cv2.circle(img, (cx3, cy3), 20, (255,0,0), -1)
+            if started == True:
+                self.twist.linear.x = .5
+                self.twist.angular.z = .8
+                self.cmd_vel_pub.publish(self.twist)
 
 
         elif (M1['m00'] == 0 and M2['m00'] > 0 and M3['m00'] > 0):
@@ -76,12 +103,20 @@ class Follower:
             cy3 = int(M3['m01']/M3['m00'])
             cv2.circle(img, (cx2, cy2), 20, (0,255,255), -1)
             cv2.circle(img, (cx3, cy3), 20, (255,0,0), -1)
+            if started == True:
+                self.twist.linear.x = .5
+                self.twist.angular.z = -.8
+                self.cmd_vel_pub.publish(self.twist)
 
         elif (M1['m00'] == 0 and M2['m00'] == 0 and M3['m00'] > 0):
             #Middle
             cx3 = int(M3['m10']/M3['m00']) + (w/4)
             cy3 = int(M3['m01']/M3['m00'])
             cv2.circle(img, (cx3, cy3), 20, (255,0,0), -1)
+            if started == True:
+                #self.twist.linear.x = .5
+                self.twist.angular.z = 1
+                self.cmd_vel_pub.publish(self.twist)
 
 
         elif (M1['m00'] > 0 and M2['m00'] >0 and M3['m00'] == 0):
@@ -92,11 +127,11 @@ class Follower:
             cy2 = int(M2['m01']/M2['m00'])
             cv2.circle(img, (cx1, cy1), 20, (0,0,255), -1)
             cv2.circle(img, (cx2, cy2), 20, (0,255,255), -1)
-            err = (cx1 + cx2)/2 - w/2
+            #err = (cx1 + cx2)/2 - w/2
 
             if started == True:
                 self.twist.linear.x = .5
-                self.twist.angular.z = -float(err) / 300
+                #self.twist.angular.z = -float(err) / 300
                 self.cmd_vel_pub.publish(self.twist)
 
         elif(M1['m00']>0 and M2['m00'] == 0 and M3['m00'] == 0):
@@ -105,28 +140,30 @@ class Follower:
             cx1 = int(M1['m10']/M1['m00'])
             cy1 = int(M1['m01']/M1['m00'])
             cv2.circle(img, (cx1, cy1), 20, (0,0,255), -1)
-            err = cx1 - w/2
+            #err = cx1 - w/2
             if started == True:
                 self.twist.linear.x = .5
-                self.twist.angular.z = float(err) / 300
+                self.twist.angular.z = .3
                 self.cmd_vel_pub.publish(self.twist)
+
         elif(M1['m00'] == 0 and M2['m00']>0 and M3['m00'] == 0):
             #Right
             cx2 = int(M2['m10']/M2['m00'])
             cy2 = int(M2['m01']/M2['m00'])
             cv2.circle(img, (cx2, cy2), 20, (0,0,255), -1)
-            err = cx2 - w/2
+            #err = cx2 - w/2
             if started == True:
                 self.twist.linear.x = .5
-                self.twist.angular.z = float(err) / 300
+                self.twist.angular.z = .3
                 self.cmd_vel_pub.publish(self.twist)#detecting right side
-            print("right")
-
-        
+            print("right")        
         else:
             #None
             print("nothing")
-            #no detection:
+            if started == True:
+                self.twist.linear.x = .1
+                self.twist.angular.z = .1
+                self.cmd_vel_pub.publish(self.twist)
         cv2.imshow("winleft", mask1)
         cv2.imshow("winright",mask2)
         cv2.imshow("window",img)
